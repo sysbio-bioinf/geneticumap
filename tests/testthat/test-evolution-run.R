@@ -2,7 +2,7 @@
 prepare_test_directory <- function() {
   # use temporary results directory
   results_dir <- file.path(tempdir(), "test")
-  message(paste0("Temporary diectory for test results: ", results_dir))
+  message("Temporary diectory for test results: ", results_dir)
 
   # delete directory to remove al files
   unlink(results_dir, recursive = TRUE)

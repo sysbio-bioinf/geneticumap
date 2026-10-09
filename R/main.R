@@ -283,7 +283,6 @@ run_optimization <- function(
   parallelMap::parallelRegisterLevels(package = "ecr", levels = "evaluateFitness")
   parallelMap::parallelLibrary("clusterCrit", "ecr", "BBmisc", "Seurat", level = "ecr.evaluateFitness")
   parallelMap::parallelStart(mode = "socket", cpus = num_processes)
-  message(paste0("Parallel setup with ", num_processes, " socket workers"))
 
   try({
     #read in raw (non-normalized) data (to initialize the Seurat object with)
@@ -296,8 +295,9 @@ run_optimization <- function(
     evolution_result <- run_evolution(config, count_data) #forks and kills child processes
 
     #write results
-    result_params <- write_result(count_data = count_data, res = evolution_result, results_dir = results_dir, config = config,
-                                  fitness_fun = fitness_function_factory(function_selection = config$evolution$fitness_func, count_data = count_data, config = config))
+    message("Writing result files in ", results_dir, "...")
+    result_params <- suppressMessages(write_result(count_data = count_data, res = evolution_result, results_dir = results_dir, config = config,
+                                  fitness_fun = fitness_function_factory(function_selection = config$evolution$fitness_func, count_data = count_data, config = config)))
 
     message("Optimization finished successfully")
 

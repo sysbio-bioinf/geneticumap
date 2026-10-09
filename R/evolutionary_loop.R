@@ -92,7 +92,7 @@ evolution_loop <- function (
     ecr::updateLogger(log, population, fitness, n.evals = lambda)
     if (is.function(monitor)) monitor()
 
-    message(paste0("Finished iteration ", n.iter, " of ", max.iter))
+    message("Finished iteration ", n.iter, " of ", max.iter)
 
     if (n.iter >= max.iter) {
       break
