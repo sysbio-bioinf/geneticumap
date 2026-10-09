@@ -36,5 +36,6 @@ Suggests:
     rmarkdown
 Config/testthat/edition: 3
 VignetteBuilder: knitr
-biocViews: GeneExpression, SingleCell, Transcriptomics, Clustering, DimensionReduction
+biocViews: GeneExpression, SingleCell, Transcriptomics, Clustering, DimensionReduction, Preprocessing
 URL: https://github.com/sysbio-bioinf/geneticumap
+BugReports: https://github.com/sysbio-bioinf/geneticumap/issues
