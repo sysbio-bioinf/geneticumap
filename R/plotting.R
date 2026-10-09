@@ -45,7 +45,7 @@ scatter_singledim <- function(ecr_result, file_name, ymax, default_chi) {
     t(vapply(population[[i]]$fitness, function(x) c(x, i - 1), FUN.VALUE = numeric(2)))
   })))
   colnames(indexed_fitness) <- c("Fitness", "Generation")
-  scatter_plot <- ggplot2::ggplot(indexed_fitness, ggplot2::aes(x = Generation, y = Fitness)) +
+  scatter_plot <- ggplot2::ggplot(indexed_fitness, ggplot2::aes(x = .data[["Generation"]], y = .data[["Fitness"]])) +
     ggplot2::coord_cartesian(ylim = c(0, ymax)) +
     ggplot2::geom_point(size = 0.3)
   ggplot2::ggsave(filename = file_name, plot = scatter_plot, width = 210, height = 170, units = "mm", dpi = 600)
