@@ -14,14 +14,14 @@ prepare_test_directory <- function() {
 # seurat-parameters.json contains all optimized parameters
 check_result_files <- function(results_dir) {
   expected_files <- list(
-      file_scatter_fitness = "scatter-fitness.png",
-      file_seurat_params = "seurat-params.json",
-      file_umap_coordinates = "umap-coordinates.tsv",
-      file_cluster_identities = "cluster-identities.tsv",
-      file_umap_plot = "umap-static-default-seurat.png",
-      file_umap_plot_interactive = "umap-interactive.html",
-      file_umap_plot_static = "umap-static.png"
-    )
+    file_scatter_fitness = "scatter-fitness.png",
+    file_seurat_params = "seurat-params.json",
+    file_umap_coordinates = "umap-coordinates.tsv",
+    file_cluster_identities = "cluster-identities.tsv",
+    file_umap_plot = "umap-static-default-seurat.png",
+    file_umap_plot_interactive = "umap-interactive.html",
+    file_umap_plot_static = "umap-static.png"
+  )
   result_files <- list.files(results_dir)
 
   expect_true(all(expected_files %in% result_files))

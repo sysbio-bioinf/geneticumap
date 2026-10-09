@@ -307,7 +307,7 @@ run_optimization <- function(
     #write results
     message("Writing result files in ", results_dir, "...")
     result_params <- suppressMessages(write_result(count_data = count_data, res = evolution_result, results_dir = results_dir, config = config,
-                                  fitness_fun = fitness_function_factory(function_selection = config$evolution$fitness_func, count_data = count_data, config = config)))
+                                                   fitness_fun = fitness_function_factory(function_selection = config$evolution$fitness_func, count_data = count_data, config = config)))
 
     message("Optimization finished successfully")
 

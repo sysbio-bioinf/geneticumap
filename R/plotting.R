@@ -32,8 +32,8 @@ plot_interactive_umap_from_res <- function(output_file_html, output_file_static,
   htmlwidgets::saveWidget(p, output_file_html, selfcontained = TRUE, libdir = NULL)
   static_colors <- stats::setNames(unname(cluster_colors), as.character(cluster_ids))
   umap_plot <- Seurat::DimPlot(res$best.seurat, reduction = "umap") +
-          ggplot2::scale_color_manual(name = "Cluster", values = static_colors, breaks = names(static_colors), labels = cluster_labels, drop = FALSE) +
-          ggplot2::theme(plot.margin = ggplot2::margin(5, 5, 0, 5))
+    ggplot2::scale_color_manual(name = "Cluster", values = static_colors, breaks = names(static_colors), labels = cluster_labels, drop = FALSE) +
+    ggplot2::theme(plot.margin = ggplot2::margin(5, 5, 0, 5))
   ggplot2::ggsave(filename = output_file_static, plot = umap_plot, width = 210, height = 170, units = "mm", dpi = 600)
   invisible(p)
 }
