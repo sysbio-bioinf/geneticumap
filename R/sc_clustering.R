@@ -30,11 +30,11 @@ sc_clustering_pipeline <- function(count_data, config, params, return_markers = 
   seurat_obj <- Seurat::RunPCA(seurat_obj, features = Seurat::VariableFeatures(object = seurat_obj), verbose = FALSE)
 
   # cluster the cells
-  seurat_obj <- Seurat::FindNeighbors(seurat_obj, dims = 1:params$dimensionality, verbose = FALSE)
+  seurat_obj <- Seurat::FindNeighbors(seurat_obj, dims = seq_len(params$dimensionality), verbose = FALSE)
   seurat_obj <- Seurat::FindClusters(seurat_obj, resolution = params$resolution, verbose = FALSE)
 
   # run UMAP
-  seurat_obj <- Seurat::RunUMAP(seurat_obj, dims = 1:params$dimensionality, n.neighbors = params$umap_neighbors, min.dist = params$umap_min_dist, verbose = FALSE)
+  seurat_obj <- Seurat::RunUMAP(seurat_obj, dims = seq_len(params$dimensionality), n.neighbors = params$umap_neighbors, min.dist = params$umap_min_dist, verbose = FALSE)
 
   if (return_markers) {
     # Compute markers only if requested, not during fitness evaluation.

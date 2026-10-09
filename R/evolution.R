@@ -84,7 +84,7 @@ setup_mutator <- function(mutation_type, adapt_mutation_rate, n_dim) {
         if (length(ind) %% 2 != 0) stop("Number of mutation rates does not match number of parameters!")
 
         n.parm <- n_dim / 2
-        params <- ind[1:n.parm]
+        params <- ind[seq_len(n.parm)]
         mutation.rates <- ind[(n.parm + 1):length(ind)]
 
         mutation.rates <- mutation.rates * (stats::rlnorm(n.parm)^adapt_mutation_rate)
