@@ -101,61 +101,52 @@ setup_mutator <- function(mutation_type, adapt_mutation_rate, n_dim) {
 }
 
 run_evolution <- function(config, count_data) {
+  n_dim <- if (config$evolution$mutation_type == "adaptive") 2L * length(config$evolution$optimization_params) else length(config$evolution$optimization_params)
+
   if (config$evolution$init_default) {
     default_params <- unlist(config$sc_clustering$default, use.names = FALSE)
     if (config$evolution$mutation_type == "adaptive") {
       default_mut_rates <- rep(0.1, length(config$evolution$optimization_params))
-      INITIAL.SOLUTIONS <- list(c(default_params, default_mut_rates))
+      initial_solutions <- list(c(default_params, default_mut_rates))
     } else {
-      INITIAL.SOLUTIONS <- list(default_params)
+      initial_solutions <- list(default_params)
     }
   } else {
-    INITIAL.SOLUTIONS <- NULL
+    initial_solutions <- NULL
   }
 
-  FX.LOWER <- unlist(sapply(config$evolution$optimization_params, \(parm) config$sc_clustering$lower[[parm]]), use.names = FALSE)
-  FX.UPPER <- unlist(sapply(config$evolution$optimization_params, \(parm) config$sc_clustering$upper[[parm]]), use.names = FALSE)
-
-  #single-objective setup
-  FITNESS.FUN <- fitness_function_factory(function_selection = config$evolution$fitness_func, config = config, count_data = count_data)
-  MINIMIZE <- fitness_function_is_minimize(config$evolution$fitness_func)
-
-  N.DIM <- if (config$evolution$mutation_type == "adaptive") 2L * length(config$evolution$optimization_params) else length(config$evolution$optimization_params)
-  MUTATOR <- setup_mutator(mutation_type = config$evolution$mutation_type, adapt_mutation_rate = config$evolution$adapt_mutation_rate, n_dim = N.DIM)
-
-  PARENT.SELECTOR <- ecr::selTournament #parent selector for single-objective task
-  SURVIVAL.SELECTOR <- ecr::selGreedy #survival selector for single-objective task
-
+  lower <- unlist(sapply(config$evolution$optimization_params, \(parm) config$sc_clustering$lower[[parm]]), use.names = FALSE)
+  upper <- unlist(sapply(config$evolution$optimization_params, \(parm) config$sc_clustering$upper[[parm]]), use.names = FALSE)
   #adaptive bounds for mutation rates if using adaptive mutation
   if (config$evolution$mutation_type == "adaptive") {
-    FX.LOWER <- c(FX.LOWER, rep.int(0.00005, length(config$evolution$optimization_params)))
-    FX.UPPER <- c(FX.UPPER, rep.int(1, length(config$evolution$optimization_params)))
+    lower <- c(lower, rep.int(0.00005, length(config$evolution$optimization_params)))
+    upper <- c(upper, rep.int(1, length(config$evolution$optimization_params)))
   }
 
   #run single-objective evolutionary algorithm
-  res <- evolution_loop(
-    fitness.fun = FITNESS.FUN,
+  result <- evolution_loop(
+    fitness.fun = fitness_function_factory(function_selection = config$evolution$fitness_func, config = config, count_data = count_data),
     fitness.fun.name = config$evolution$fitness_func,
-    minimize = MINIMIZE,
+    minimize = fitness_function_is_minimize(config$evolution$fitness_func),
     n.objectives = 1L,
     representation = "float",
-    n.dim = N.DIM,
-    lower = FX.LOWER,
-    upper = FX.UPPER,
+    n.dim = n_dim,
+    lower = lower,
+    upper = upper,
     mu = config$evolution$mu,
     lambda = config$evolution$lambda,
     p.recomb = config$evolution$probability_recombination,
     p.mut = config$evolution$probability_mutation,
     survival.strategy = config$evolution$survival_strategy,
-    initial.solutions = INITIAL.SOLUTIONS,
+    initial.solutions = initial_solutions,
     max.iter = config$evolution$max_iterations,
-    mutator = MUTATOR,
-    parent.selector = PARENT.SELECTOR,
-    survival.selector = SURVIVAL.SELECTOR,
+    mutator = setup_mutator(mutation_type = config$evolution$mutation_type, adapt_mutation_rate = config$evolution$adapt_mutation_rate, n_dim = n_dim),
+    parent.selector = ecr::selTournament, #parent selector for single-objective task
+    survival.selector = ecr::selGreedy, #survival selector for single-objective task
     log.stats = config$evolution$log$stats,
     log.pop = config$evolution$log$population
   )
-  return(res)
+  return(result)
 }
 
 write_result <- function(count_data, res, results_dir, fitness_fun, config) {
