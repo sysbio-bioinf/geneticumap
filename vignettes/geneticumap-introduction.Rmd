@@ -1,6 +1,6 @@
 ---
 title: "Getting started with geneticumap"
-author: "Lisa-Maria Winter, Hanna Wagner, and Dominik Dreiheller"
+author: "Hanna Wagner, Lisa-Maria Winter, and Dominik Dreiheller"
 package: geneticumap
 output: rmarkdown::html_document
 vignette: >
@@ -53,31 +53,33 @@ and mitochondrial content must be below 5% using the `^MT-` gene-name pattern.
 
 ## Run an optimization
 
-Run the example in your R session with a valid dataset path. Point `data_dir` to your input directory and `results_dir` to a results directory. 
+The package includes a small HDF5 dataset* for this reproducible example. The
+optimization settings below match the lightweight configuration used by the
+package tests.
 
-```{r run-optimization, eval=FALSE}
+```{r import-package-and-data, message=FALSE, warning=FALSE, results='hide'}
 library(geneticumap)
 
-data_dir <- "path/to/10x_dataset"
-results_dir <- file.path(data_dir, "geneticumap_results")
+data_dir <- file.path("..", "tests", "testdata")
+results_dir <- file.path(tempdir(), "geneticumap-vignette-results")
+```
 
-run_optimization(
+```{r run-optimization, message=FALSE, warning=FALSE, results='hide'}
+optimization_result <- run_optimization(
   data_dir = data_dir,
   results_dir = results_dir,
-  max_iterations = 10,
+  mu = 2,
+  lambda = 4,
+  max_iterations = 2,
   num_processes = 1
 )
 ```
 
-The function writes its results to `results_dir`; it does not return the best
-parameter set as an R object. Read the optimized parameter set from the JSON file:
+The function writes its results to `results_dir` and returns the optimized
+parameters as a named vector. The same parameters are saved in a JSON file within `results_dir`.
 
-```{r read-parameters, eval=FALSE}
-best_parameters <- jsonlite::read_json(
-  file.path(results_dir, "seurat-params.json"),
-  simplifyVector = TRUE
-)
-best_parameters
+```{r read-parameters}
+optimization_result
 ```
 
 ## Result files
@@ -87,7 +89,7 @@ best_parameters
 | `seurat-params.json` | Selected values for the six pipeline parameters. |
 | `umap-coordinates.tsv` | One row per cell, with its barcode and two UMAP coordinates (`umap_1`, `umap_2`). |
 | `cluster-identities.tsv` | The Seurat cluster assignment for each cell barcode. These are the clusters used to calculate the CH index. |
-| `scatter-fitness.png` | Best, mean, and worst CH fitness across generations. Higher fitness is better for this optimization. |
+| `scatter-fitness.png` | CH fitness across generations. |
 | `umap-static.png` | Static UMAP plot for the selected parameter set. |
 | `umap-static-default-seurat.png` | Static UMAP plot using the package's default parameter set, for comparison. |
 | `umap-interactive.html` | Interactive UMAP for the selected settings, with cluster labels and hover information for top marker genes. |
@@ -95,3 +97,14 @@ best_parameters
 The coordinate and cluster tables can be joined by `cell_id`. Comparing the
 two static plots gives a quick visual comparison between the default and
 selected settings; open the interactive HTML file for cell-level exploration.
+
+## References
+*We retrieved this testdataset from the Seurat pipeline (https://satijalab.org/seurat/articles/pbmc3k_tutorial) and converted to h5. 
+The original source of the dataset is:
+10x Genomics. 3k PBMCs from a Healthy Donor, Single Cell Gene Expression Dataset by Cell Ranger v1.1.0. 2016. url: https://www.10xgenomics.com/welcome?closeUrl=%2Fdatasets&lastTouchOfferName=3k%20PBMCs%20from%20a%20Healthy%20Donor&lastTouchOfferType=Dataset&product=atera&redirectUrl=%2Fdatasets%2F3-k-pbm-cs-from-a-healthy-donor-1-standard-1-1-0
+
+## Session information
+
+```{r session-info}
+utils::sessionInfo()
+```
