@@ -1,3 +1,5 @@
+optimization_params <- c("scale_factor", "nfeatures", "dimensionality", "resolution", "umap_neighbors", "umap_min_dist")
+
 # data loading - format check
 load_count_data <- function(data_dir, gene_column) {
   h5_file <- list.files(data_dir, pattern = "\\.h5$", full.names = TRUE)[1]
@@ -13,13 +15,107 @@ load_count_data <- function(data_dir, gene_column) {
 check_write_permissions <- function(directory, error_message) {
   tryCatch({
     test_file_path <- file.path(directory, "permission-test")
-      writeLines("test", con = test_file_path)
-      if (file.exists(test_file_path)) {
-        file.remove(test_file_path)
-      }
-    }, error = function() {
-      stop(error_message)
-    })
+    writeLines("test", con = test_file_path)
+    if (file.exists(test_file_path)) {
+      file.remove(test_file_path)
+    }
+  }, error = function() {
+    stop(error_message)
+  })
+}
+
+# checks whether all parameters have valid data types and values
+check_parameter_validity <- function(gene_column, max_iterations, mu, lambda, survival_strategy, probability_recombination, probability_mutation, adapt_mutation_rate,
+                                     scale_factor_min, nfeatures_min, dimensionality_min, resolution_min, umap_neighbors_min, umap_min_dist_min,
+                                     scale_factor_max, nfeatures_max, dimensionality_max, resolution_max, umap_neighbors_max, umap_min_dist_max, num_processes) {
+  checkmate::assert_int(gene_column, lower = 1)
+  checkmate::assert_int(max_iterations, lower = 1)
+  checkmate::assert_int(mu, lower = 1)
+  checkmate::assert_int(lambda, lower = 1)
+  checkmate::assert_choice(survival_strategy, c("plus", "comma"))
+  checkmate::assert_number(probability_recombination, lower = 0, upper = 1)
+  checkmate::assert_number(probability_mutation, lower = 0, upper = 1)
+  checkmate::assert_number(adapt_mutation_rate, lower = 0, upper = 1)
+
+  checkmate::assert_number(scale_factor_min, lower = 1000)
+  checkmate::assert_number(scale_factor_max, lower = scale_factor_min, upper = 50000)
+
+  checkmate::assert_number(nfeatures_min, lower = 500)
+  checkmate::assert_number(nfeatures_max, lower = nfeatures_min, upper = 5000)
+
+  checkmate::assert_number(dimensionality_min, lower = 5)
+  checkmate::assert_number(dimensionality_max, lower = dimensionality_min, upper = 50)
+
+  checkmate::assert_number(resolution_min, lower = 0.1)
+  checkmate::assert_number(resolution_max, lower = resolution_min, upper = 2)
+
+  checkmate::assert_number(umap_neighbors_min, lower = 5)
+  checkmate::assert_number(umap_neighbors_max, lower = umap_neighbors_min, upper = 50)
+
+  checkmate::assert_number(umap_min_dist_min, lower = 0.01)
+  checkmate::assert_number(umap_min_dist_max, lower = umap_min_dist_min, upper = 0.7)
+
+  checkmate::assert_int(num_processes, lower = 1, parallelly::availableCores())
+}
+
+# creates a sc_clustering configuration with the given values
+create_sc_clustering_config <- function(scale_factor, nfeatures, dimensionality, resolution, umap_neighbors, umap_min_dist) {
+  return(list(
+    scale_factor = scale_factor,
+    nfeatures = nfeatures,
+    dimensionality = dimensionality,
+    resolution = resolution,
+    umap_neighbors = umap_neighbors,
+    umap_min_dist = umap_min_dist
+  ))
+}
+
+# creates a configuration as named vector with the given values
+create_config <- function(results_dir, gene_column, max_iterations, mu, lambda, survival_strategy, probability_recombination, probability_mutation, adapt_mutation_rate,
+                          scale_factor_min, nfeatures_min, dimensionality_min, resolution_min, umap_neighbors_min, umap_min_dist_min,
+                          scale_factor_max, nfeatures_max, dimensionality_max, resolution_max, umap_neighbors_max, umap_min_dist_max) {
+  return(list(
+    evolution = list(
+      log = list(
+        population = TRUE,
+        stats = c("worst", "mean", "best")
+      ),
+      gene_column = gene_column,
+      init_default = TRUE,
+      max_iterations = max_iterations,
+      mu = mu,
+      lambda = lambda,
+      optimization_params = optimization_params,
+      survival_strategy = survival_strategy,
+      fitness_func = "Calinski_Harabasz",
+      probability_recombination = probability_recombination,
+      probability_mutation = probability_mutation,
+      mutation_type = "adaptive",
+      adapt_mutation_rate = adapt_mutation_rate
+    ),
+    sc_clustering = list(
+      default = create_sc_clustering_config(10000, 2000, 10, 0.5, 30, 0.3),
+      lower = create_sc_clustering_config(scale_factor_min, nfeatures_min, dimensionality_min, resolution_min, umap_neighbors_min, umap_min_dist_min),
+      upper = create_sc_clustering_config(scale_factor_max, nfeatures_max, dimensionality_max, resolution_max, umap_neighbors_max, umap_min_dist_max
+      ),
+      quality_thresholds = list(
+        nFeature_RNA_min = 200,
+        nFeature_RNA_max = 2500,
+        percent_mt = 5
+      )
+    ),
+    results = list(
+      dir_name = results_dir,
+      file_scatter_fitness = "scatter-fitness.png",
+      file_seurat_params = "seurat-params.json",
+      file_umap_coordinates = "umap-coordinates.tsv",
+      file_cluster_identities = "cluster-identities.tsv",
+      file_umap_plot = "umap-static-default-seurat.png",
+      file_umap_plot_interactive = "umap-interactive.html",
+      dir_umap_plot_interactive = "umap-interactive_files",
+      file_umap_plot_static = "umap-static.png"
+    )
+  ))
 }
 
 #' Optimizes UMAP-based clustering pipeline parameters for single-cell RNA-seq data using an evolutionary algorithm
@@ -165,103 +261,15 @@ run_optimization <- function(
 
   num_processes = min(lambda, parallelly::availableCores())
 ) {
-  # check parameter validity
-  checkmate::assert_int(gene_column, lower = 1)
-  checkmate::assert_int(max_iterations, lower = 1)
-  checkmate::assert_int(mu, lower = 1)
-  checkmate::assert_int(lambda, lower = 1)
-  checkmate::assert_choice(survival_strategy, c("plus", "comma"))
-  checkmate::assert_number(probability_recombination, lower = 0, upper = 1)
-  checkmate::assert_number(probability_mutation, lower = 0, upper = 1)
-  checkmate::assert_number(adapt_mutation_rate, lower = 0, upper = 1)
-
-  checkmate::assert_number(scale_factor_min, lower = 1000)
-  checkmate::assert_number(scale_factor_max, lower = scale_factor_min, upper = 50000)
-
-  checkmate::assert_number(nfeatures_min, lower = 500)
-  checkmate::assert_number(nfeatures_max, lower = nfeatures_min, upper = 5000)
-
-  checkmate::assert_number(dimensionality_min, lower = 5)
-  checkmate::assert_number(dimensionality_max, lower = dimensionality_min, upper = 50)
-
-  checkmate::assert_number(resolution_min, lower = 0.1)
-  checkmate::assert_number(resolution_max, lower = resolution_min, upper = 2)
-
-  checkmate::assert_number(umap_neighbors_min, lower = 5)
-  checkmate::assert_number(umap_neighbors_max, lower = umap_neighbors_min, upper = 50)
-
-  checkmate::assert_number(umap_min_dist_min, lower = 0.01)
-  checkmate::assert_number(umap_min_dist_max, lower = umap_min_dist_min, upper = 0.7)
-
-  checkmate::assert_int(num_processes, lower = 1, parallelly::availableCores())
+  check_parameter_validity(gene_column, max_iterations, mu, lambda, survival_strategy, probability_recombination, probability_mutation, adapt_mutation_rate,
+                           scale_factor_min, nfeatures_min, dimensionality_min, resolution_min, umap_neighbors_min, umap_min_dist_min,
+                           scale_factor_max, nfeatures_max, dimensionality_max, resolution_max, umap_neighbors_max, umap_min_dist_max, num_processes)
 
   message("Initializing optimization...")
 
-  optimization_params <- c("scale_factor", "nfeatures", "dimensionality", "resolution", "umap_neighbors", "umap_min_dist")
-
-  #create configurations
-  config <- list(
-    evolution = list(
-      log = list(
-        population = TRUE,
-        stats = c("worst", "mean", "best")
-      ),
-      gene_column = gene_column,
-      init_default = TRUE,
-      max_iterations = max_iterations,
-      mu = mu,
-      lambda = lambda,
-      optimization_params = optimization_params,
-      survival_strategy = survival_strategy,
-      fitness_func = "Calinski_Harabasz",
-      probability_recombination = probability_recombination,
-      probability_mutation = probability_mutation,
-      mutation_type = "adaptive",
-      adapt_mutation_rate = adapt_mutation_rate
-    ),
-    sc_clustering = list(
-      default = list(
-        scale_factor = 10000,
-        nfeatures = 2000,
-        dimensionality = 10,
-        resolution = 0.5,
-        umap_neighbors = 30,
-        umap_min_dist = 0.3
-      ),
-      lower = list(
-        scale_factor = scale_factor_min,
-        nfeatures = nfeatures_min,
-        dimensionality = dimensionality_min,
-        resolution = resolution_min,
-        umap_neighbors = umap_neighbors_min,
-        umap_min_dist = umap_min_dist_min
-      ),
-      upper = list(
-        scale_factor = scale_factor_max,
-        nfeatures = nfeatures_max,
-        dimensionality = dimensionality_max,
-        resolution = resolution_max,
-        umap_neighbors = umap_neighbors_max,
-        umap_min_dist = umap_min_dist_max
-      ),
-      quality_thresholds = list(
-        nFeature_RNA_min = 200,
-        nFeature_RNA_max = 2500,
-        percent_mt = 5
-      )
-    ),
-    results = list (
-      dir_name = results_dir,
-      file_scatter_fitness = "scatter-fitness.png",
-      file_seurat_params = "seurat-params.json",
-      file_umap_coordinates = "umap-coordinates.tsv",
-      file_cluster_identities = "cluster-identities.tsv",
-      file_umap_plot = "umap-static-default-seurat.png",
-      file_umap_plot_interactive = "umap-interactive.html",
-      dir_umap_plot_interactive = "umap-interactive_files",
-      file_umap_plot_static = "umap-static.png"
-    )
-  )
+  config <- create_config(results_dir, gene_column, max_iterations, mu, lambda, survival_strategy, probability_recombination, probability_mutation, adapt_mutation_rate,
+                          scale_factor_min, nfeatures_min, dimensionality_min, resolution_min, umap_neighbors_min, umap_min_dist_min,
+                          scale_factor_max, nfeatures_max, dimensionality_max, resolution_max, umap_neighbors_max, umap_min_dist_max)
 
   #create results directory
   if (!dir.exists(results_dir)) dir.create(results_dir, showWarnings = TRUE)
@@ -277,32 +285,26 @@ run_optimization <- function(
   parallelMap::parallelStart(mode = "socket", cpus = num_processes)
   message(paste0("Parallel setup with ", num_processes, " socket workers"))
 
-  tryCatch(
-    expr = {
-      #read in raw (non-normalized) data (to initialize the Seurat object with)
-      count_data <- load_count_data(data_dir, config$evolution$gene_column)
+  try({
+    #read in raw (non-normalized) data (to initialize the Seurat object with)
+    count_data <- load_count_data(data_dir, config$evolution$gene_column)
 
-      #exchange data with socket workers
-      parallelMap::parallelExport(objnames = c("get_umap_coords", "fitness_function", "sc_clustering_pipeline", "config", "count_data"))
+    #exchange data with socket workers
+    parallelMap::parallelExport(objnames = c("get_umap_coords", "fitness_function", "sc_clustering_pipeline", "config", "count_data"))
 
-      #execute evolution job
-      evolution_result <- run_evolution(config, count_data) #forks and kills child processes
+    #execute evolution job
+    evolution_result <- run_evolution(config, count_data) #forks and kills child processes
 
-      #write results
-      result_params <- write_result(count_data = count_data, res = evolution_result, results_dir = results_dir, config = config,
-                                    fitness_fun = fitness_function_factory(function_selection = config$evolution$fitness_func, count_data = count_data, config = config))
+    #write results
+    result_params <- write_result(count_data = count_data, res = evolution_result, results_dir = results_dir, config = config,
+                                  fitness_fun = fitness_function_factory(function_selection = config$evolution$fitness_func, count_data = count_data, config = config))
 
-      message("Optimization finished successfully")
+    message("Optimization finished successfully")
 
-      names(result_params) <- optimization_params
-      return(result_params)
-    },
-    error = function (errorObj) {
-      stop(paste0("An error occurred during optimization: ", errorObj))
-    },
-    finally = {
-      #clean up parallel configuration
-      parallelMap::parallelStop()
-    }
-  )
+    names(result_params) <- optimization_params
+  })
+  #clean up parallel configuration
+  parallelMap::parallelStop()
+
+  return(result_params)
 }
