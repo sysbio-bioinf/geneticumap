@@ -112,7 +112,7 @@ The optimization includes the following parameters:
 }
 
 Each parameter is optimized within predefined upper and lower bounds which can be set with the \verb{[parameter]_min} and \verb{[parameter]_max} function parameters.
-If \verb{[parameter]_min = [parameter]_max}, the parameter does not evolve.
+If \verb{[parameter]_min = [parameter]_max}, the parameter does not evolve. Note that the default parameters are always evaluated nonetheless.
 The default parameter values are based on the \href{https://satijalab.org/seurat/articles/pbmc3k_tutorial}{Seurat PBMC 3K tutorial}.
 Although all six parameters are numerically encoded as floating-point values during optimization, some are interpreted as integers later:
 \code{dimensionality} is rounded before use and \code{nfeatures} and \code{umap_neighbors} for analysis views.
@@ -184,7 +184,11 @@ The evolution uses \code{parallelMap}, at level \code{ecr.evaluateFitness} to \s
 Therefore, each individual can be evaluated in a different parallelization unit.
 This is recommended because evaluating one individual means running a full Seurat pipeline, which is computationally expensive.
 The number of processes can be set with the \code{num_processes} function parameter.
-Since parallelMap uses \code{fork} to clone processes, problems with parallelization may occur under macOS.
-You can then either disable parallelization by setting \code{num_processes = 1} or disable the safety check that prevents forking by setting the environment variable \code{OBJC_DISABLE_INITIALIZE_FORK_SAFETY} to \code{YES} for your R environment.
+You can then disable parallelization by setting \code{num_processes = 1}.
 }
 
+\examples{
+run_optimization(data_dir = "/Users/myuser/Documents/mydata")
+run_optimization(data_dir = "../mydata", results_dir = ../mydata/optimization-results, mu = 2, lambda = 4, max_iterations = 8)
+run_optimization(data_dir = "../mydata", dimensionality_min = 6, dimensionality_max = 6, num_processes = 1)
+}

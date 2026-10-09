@@ -233,6 +233,10 @@ create_config <- function(results_dir, gene_column, max_iterations, mu, lambda, 
 #' @param num_processes the number of processes to run the fitness evaluation with - default is the minimum of number of individuals and available cores
 #' @export
 #' @returns the optimized parameters of the evolution as named vector
+#' @examples
+#' run_optimization(data_dir = "/Users/myuser/Documents/mydata")
+#' run_optimization(data_dir = "../mydata", results_dir = ../mydata/optimization-results, mu = 2, lambda = 4, max_iterations = 8)
+#' run_optimization(data_dir = "../mydata", dimensionality_min = 6, dimensionality_max = 6, num_processes = 1)
 run_optimization <- function(
   data_dir,
   results_dir = file.path(data_dir, "results"),
