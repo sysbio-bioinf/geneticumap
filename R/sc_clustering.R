@@ -1,4 +1,3 @@
-library(Seurat, quietly = TRUE)
 options(Seurat.warn.umap.uwot = FALSE)
 
 sc_clustering_pipeline <- function(count_data, config, params, return_markers = FALSE) {

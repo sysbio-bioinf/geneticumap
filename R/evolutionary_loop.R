@@ -1,6 +1,3 @@
-library(checkmate, quietly = TRUE)
-library(ecr, quietly = TRUE)
-
 evolution_loop <- function (
   fitness.fun,
   fitness.fun.name,
