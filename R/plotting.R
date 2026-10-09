@@ -5,11 +5,8 @@ plot_umap <- function(count_data, config, ind, filename, ...) {
   names(ind) <- config$evolution$optimization_params
   umap_plot <- Seurat::DimPlot(sc_clustering_pipeline(count_data = count_data, config = config, params = ind), reduction = "umap", ...) +
     ggplot2::scale_color_discrete(name = "Cluster", labels = function(x) paste("Cluster", x)) +
-    # coord_fixed(ratio = 1) +
     ggplot2::theme(plot.margin = ggplot2::margin(5, 5, 0, 5))
-  grDevices::png(filename = filename, width = 210, height = 170, units = "mm", res = 600)
-  print(umap_plot)
-  grDevices::dev.off()
+  ggplot2::ggsave(filename = filename, plot = umap_plot, width = 210, height = 170, units = "mm", dpi = 600)
 }
 
 plot_interactive_umap_from_res <- function(output_file_html, output_file_static, res) {
@@ -34,9 +31,10 @@ plot_interactive_umap_from_res <- function(output_file_html, output_file_static,
   p <- plotly::plot_ly(umap, x = ~umap_1, y = ~umap_2, type = "scattergl", mode = "markers", color = ~cluster_label, colors = unname(cluster_colors), text = ~hover[cluster], hoverinfo = "text")
   htmlwidgets::saveWidget(p, output_file_html, selfcontained = TRUE, libdir = NULL)
   static_colors <- stats::setNames(unname(cluster_colors), as.character(cluster_ids))
-  grDevices::png(output_file_static, width = 210, height = 170, units = "mm", res = 600); print(Seurat::DimPlot(res$best.seurat, reduction = "umap") +
-                                                                                                  ggplot2::scale_color_manual(name = "Cluster", values = static_colors, breaks = names(static_colors), labels = cluster_labels, drop = FALSE) +
-                                                                                                  ggplot2::theme(plot.margin = ggplot2::margin(5, 5, 0, 5))); grDevices::dev.off()
+  umap_plot <- Seurat::DimPlot(res$best.seurat, reduction = "umap") +
+          ggplot2::scale_color_manual(name = "Cluster", values = static_colors, breaks = names(static_colors), labels = cluster_labels, drop = FALSE) +
+          ggplot2::theme(plot.margin = ggplot2::margin(5, 5, 0, 5))
+  ggplot2::ggsave(filename = output_file_static, plot = umap_plot, width = 210, height = 170, units = "mm", dpi = 600)
   invisible(p)
 }
 
@@ -48,10 +46,7 @@ scatter_singledim <- function(ecr_result, file_name, ymax, default_chi) {
   scatter_plot <- ggplot2::ggplot(indexed_fitness, ggplot2::aes(x = Generation, y = Fitness)) +
     ggplot2::coord_cartesian(ylim = c(0, ymax)) +
     ggplot2::geom_point(size = 0.3)
-  #geom_hline(yintercept = default_chi, color = "blue", linetype = "dashed")
-  grDevices::png(filename = file_name, width = 210, height = 170, units = "mm", res = 600)
-  print(scatter_plot)
-  grDevices::dev.off()
+  ggplot2::ggsave(filename = file_name, plot = scatter_plot, width = 210, height = 170, units = "mm", dpi = 600)
 }
 
 calc_default_chi <- function(fitness_fun, config) {
