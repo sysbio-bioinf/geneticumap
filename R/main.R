@@ -271,7 +271,7 @@ run_optimization <- function(
   Sys.setenv("VECLIB_MAXIMUM_THREADS" = 1)
 
   #setup parallelization with socket workers
-  on.exit(expr = parallelStop()) #shut down all workers, when the main process stops
+  on.exit(expr = parallelMap::parallelStop()) #shut down all workers, when the main process stops
   parallelMap::parallelRegisterLevels(package = "ecr", levels = "evaluateFitness")
   parallelMap::parallelLibrary("clusterCrit", "ecr", "BBmisc", "Seurat", level = "ecr.evaluateFitness")
   parallelMap::parallelStart(mode = "socket", cpus = num_processes)
@@ -283,7 +283,7 @@ run_optimization <- function(
       count_data <- load_count_data(data_dir, config$evolution$gene_column)
 
       #exchange data with socket workers
-      parallelExport(objnames = c("get_umap_coords", "fitness_function", "sc_clustering_pipeline", "config", "count_data"))
+      parallelMap::parallelExport(objnames = c("get_umap_coords", "fitness_function", "sc_clustering_pipeline", "config", "count_data"))
 
       #execute evolution job
       evolution_result <- run_evolution(config, count_data) #forks and kills child processes
