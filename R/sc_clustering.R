@@ -10,18 +10,9 @@ sc_clustering_pipeline <- function(count_data, config, params, return_markers = 
     seurat_obj[["percent_mt"]] <- Seurat::PercentageFeatureSet(seurat_obj, pattern = "^MT-")
 
     seurat_meta <- seurat_obj[[]]
-    keep_cells <- seurat_meta$nFeature_RNA > config$
-        sc_clustering$
-        quality_thresholds$
-        nFeature_RNA_min &
-        seurat_meta$nFeature_RNA < config$
-            sc_clustering$
-            quality_thresholds$
-            nFeature_RNA_max &
-        seurat_meta$percent_mt < config$
-            sc_clustering$
-            quality_thresholds$
-            percent_mt
+    keep_cells <- seurat_meta$nFeature_RNA > config$sc_clustering$quality_thresholds$nFeature_RNA_min &
+        seurat_meta$nFeature_RNA < config$sc_clustering$quality_thresholds$nFeature_RNA_max &
+        seurat_meta$percent_mt < config$sc_clustering$quality_thresholds$percent_mt
     seurat_obj <- seurat_obj[, keep_cells]
 
     # round integer-valued parameters (optimizer works with continuous floats)
