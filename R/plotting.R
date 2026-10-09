@@ -21,20 +21,22 @@ plot_interactive_umap_from_res <- function(output_file_html, output_file_static,
   cluster_colors <- stats::setNames(grDevices::hcl.colors(length(cluster_ids), palette = "Dynamic"), cluster_labels)
   umap$cluster_label <- factor(paste("Cluster", umap$cluster), levels = cluster_labels)
   markers <- res$best.markers; if (is.null(markers$gene)) markers$gene <- rownames(markers)
-  
+
   # design hover text
   top20 <- lapply(split(markers, as.character(markers$cluster)), \(df) utils::head(df$gene[order(df$avg_log2FC, decreasing = TRUE)], 20))
   hover <- stats::setNames(vapply(names(top20), \(cl) {
     genes <- top20[[cl]]
-    gene_text <- paste(sapply(seq(1, length(genes), 5), \(i) paste(genes[i:min(i+4, length(genes))], collapse = ", ")), collapse = "<br>")
+    gene_text <- paste(sapply(seq(1, length(genes), 5), \(i) paste(genes[i:min(i + 4, length(genes))], collapse = ", ")), collapse = "<br>")
     paste0("Cluster: ", cl, "<br>Top 20 markers:<br>", gene_text)
   }, character(1)), names(top20))
-  
+
   # generate and save plot
   p <- plotly::plot_ly(umap, x = ~umap_1, y = ~umap_2, type = "scattergl", mode = "markers", color = ~cluster_label, colors = unname(cluster_colors), text = ~hover[cluster], hoverinfo = "text")
   htmlwidgets::saveWidget(p, output_file_html, selfcontained = TRUE, libdir = NULL)
   static_colors <- stats::setNames(unname(cluster_colors), as.character(cluster_ids))
-  grDevices::png(output_file_static, width = 210, height = 170, units = "mm", res = 600); print(Seurat::DimPlot(res$best.seurat, reduction = "umap") + ggplot2::scale_color_manual(name = "Cluster", values = static_colors, breaks = names(static_colors), labels = cluster_labels, drop = FALSE) + ggplot2::theme(plot.margin = ggplot2::margin(5, 5, 0, 5))); grDevices::dev.off()
+  grDevices::png(output_file_static, width = 210, height = 170, units = "mm", res = 600); print(Seurat::DimPlot(res$best.seurat, reduction = "umap") +
+                                                                                                  ggplot2::scale_color_manual(name = "Cluster", values = static_colors, breaks = names(static_colors), labels = cluster_labels, drop = FALSE) +
+                                                                                                  ggplot2::theme(plot.margin = ggplot2::margin(5, 5, 0, 5))); grDevices::dev.off()
   invisible(p)
 }
 
@@ -46,7 +48,7 @@ scatter_singledim <- function(ecr_result, file_name, ymax, default_chi) {
   scatter_plot <- ggplot2::ggplot(indexed_fitness, ggplot2::aes(x = Generation, y = Fitness)) +
     ggplot2::coord_cartesian(ylim = c(0, ymax)) +
     ggplot2::geom_point(size = 0.3)
-    #geom_hline(yintercept = default_chi, color = "blue", linetype = "dashed")
+  #geom_hline(yintercept = default_chi, color = "blue", linetype = "dashed")
   grDevices::png(filename = file_name, width = 210, height = 170, units = "mm", res = 600)
   print(scatter_plot)
   grDevices::dev.off()

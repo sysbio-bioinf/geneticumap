@@ -3,7 +3,16 @@ optimization_params <- c("scale_factor", "nfeatures", "dimensionality", "resolut
 # data loading - format check
 load_count_data <- function(data_dir, gene_column) {
   h5_file <- list.files(data_dir, pattern = "\\.h5$", full.names = TRUE)[1]
-  if (!is.na(h5_file)) counts <- Seurat::Read10X_h5(filename = h5_file)
+  if (!is.na(h5_file)) {
+    # check if hdf5r is installed to read in the file
+    if (!requireNamespace("hdf5r", quietly = TRUE)) {
+      stop(
+        "The package 'hdf5r' is necessary to use the .h5 file type. Install it with install.packages('hdf5r').",
+        call. = FALSE
+      )
+    }
+    counts <- Seurat::Read10X_h5(filename = h5_file)
+  }
   else counts <- Seurat::Read10X(data.dir = data_dir, gene.column = gene_column)
 
   # replace underscores with dashes in the feature names

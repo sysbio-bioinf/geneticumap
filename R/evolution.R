@@ -182,7 +182,13 @@ write_result <- function(count_data, res, results_dir, fitness_fun, config) {
 
   umap_plot_html <- file.path(results_dir, config$results$file_umap_plot_interactive)
   umap_plot_static <- file.path(results_dir, config$results$file_umap_plot_static)
-  plot_interactive_umap_from_res(output_file_html = umap_plot_html, output_file_static = umap_plot_static, res = res)
+
+  # check for optional package htmlwidgets
+  if (requireNamespace("htmlwidgets", quietly = TRUE)) {
+    plot_interactive_umap_from_res(output_file_html = umap_plot_html, output_file_static = umap_plot_static, res = res)
+  } else {
+    message("Optional package 'htmlwidgets' is not installed. No interactive umap plot is generated.")
+  }
 
   return(best.params)
 }

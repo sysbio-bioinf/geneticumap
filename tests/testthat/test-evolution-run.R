@@ -67,6 +67,8 @@ check_umap_min_dist_in_range <- function(scale_factor, min = 0.01, max = 0.7) {
 
 # run full evolution with default parameters
 test_that("Evolution runs successfully (single-threaded)", {
+  testthat::skip_if_not_installed("hdf5r")
+
   results_dir <- prepare_test_directory()
 
   # run evolution
@@ -103,6 +105,8 @@ test_that("Parameter checks fail as expected", {
 
 # set one optimized parameter to a fix value by setting _min = _max and expect the resulting parameter to stick with the fix value
 test_that("Evolution runs with fix parameter (with socket workers)", {
+  testthat::skip_if_not_installed("hdf5r")
+
   results_dir <- prepare_test_directory()
 
   # run evolution with fixed dimensionality

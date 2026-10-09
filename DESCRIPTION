@@ -17,23 +17,23 @@ Imports:
     ecr,
     clusterCrit,
     Seurat,
-    hdf5r,
     BBmisc,
     checkmate,
     SeuratObject,
-    htmlwidgets,
     jsonlite,
     parallelMap,
     plotly,
     ggplot2,
     parallelly
+Suggests:
+    hdf5r,
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown,
+    htmlwidgets
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 8.0.0
-Suggests: 
-    testthat (>= 3.0.0),
-    knitr,
-    rmarkdown
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 biocViews: GeneExpression, SingleCell, Transcriptomics, Clustering, DimensionReduction, Preprocessing
