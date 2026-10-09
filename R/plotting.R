@@ -41,7 +41,9 @@ plot_interactive_umap_from_res <- function(output_file_html, output_file_static,
 # x axis = generation, y axis = fitness of each individual per generation, blue dashed line = fitness of default parameters
 scatter_singledim <- function(ecr_result, file_name, ymax, default_chi) {
   population <- ecr_result$log$env$pop
-  indexed_fitness <- Reduce(rbind.data.frame, sapply(1:length(population), \(i) t(sapply(population[[i]]$fitness, \(x) c(x, i - 1)))))
+  indexed_fitness <- as.data.frame(do.call(rbind, lapply(seq_along(population), function(i) {
+    t(vapply(population[[i]]$fitness, function(x) c(x, i - 1), FUN.VALUE = numeric(2)))
+  })))
   colnames(indexed_fitness) <- c("Fitness", "Generation")
   scatter_plot <- ggplot2::ggplot(indexed_fitness, ggplot2::aes(x = Generation, y = Fitness)) +
     ggplot2::coord_cartesian(ylim = c(0, ymax)) +
