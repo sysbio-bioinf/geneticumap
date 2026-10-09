@@ -288,9 +288,6 @@ run_optimization <- function(
   if (!dir.exists(results_dir)) dir.create(results_dir, showWarnings = TRUE)
   check_write_permissions(results_dir, paste0("Missing write permissions on result directory ", results_dir))
 
-  #disable vectorization under macOS
-  Sys.setenv("VECLIB_MAXIMUM_THREADS" = 1)
-
   #setup parallelization with socket workers
   on.exit(expr = parallelMap::parallelStop()) #shut down all workers, when the main process stops
   parallelMap::parallelRegisterLevels(package = "ecr", levels = "evaluateFitness")
