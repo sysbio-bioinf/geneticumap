@@ -39,7 +39,8 @@ check_parameter_validity <- function(gene_column, max_iterations, mu, lambda,
     scale_factor_min, nfeatures_min, dimensionality_min, resolution_min,
     umap_neighbors_min, umap_min_dist_min, scale_factor_max, nfeatures_max,
     dimensionality_max, resolution_max, umap_neighbors_max, umap_min_dist_max,
-    num_processes) {
+    num_processes, qc_nfeature_min, qc_nfeature_max, qc_percent_mt_max,
+    mt_gene_pattern, qc_gene_min_cells) {
     checkmate::assert_int(gene_column, lower = 1)
     checkmate::assert_int(max_iterations, lower = 1)
     checkmate::assert_int(mu, lower = 1)
@@ -72,6 +73,12 @@ check_parameter_validity <- function(gene_column, max_iterations, mu, lambda,
 
     checkmate::assert_int(num_processes, lower = 1,
         parallelly::availableCores())
+
+    checkmate::assert_int(qc_nfeature_min, lower = 0)
+    checkmate::assert_int(qc_nfeature_max, lower = qc_nfeature_min + 2)
+    checkmate::assert_number(qc_percent_mt_max, lower = 0, upper = 100)
+    checkmate::assert_string(mt_gene_pattern, min.chars = 1)
+    checkmate::assert_int(qc_gene_min_cells, lower = 0)
 }
 
 # creates a sc_clustering configuration with the given values
@@ -92,9 +99,10 @@ create_config <- function(results_dir, gene_column, max_iterations, mu,
     lambda, survival_strategy, probability_mutation, adapt_mutation_rate,
     scale_factor_min, nfeatures_min, dimensionality_min, resolution_min,
     umap_neighbors_min, umap_min_dist_min, scale_factor_max, nfeatures_max,
-    dimensionality_max, resolution_max, umap_neighbors_max, umap_min_dist_max) {
-    return(list(
-        evolution = list(
+    dimensionality_max, resolution_max, umap_neighbors_max, umap_min_dist_max,
+    qc_nfeature_min, qc_nfeature_max, qc_percent_mt_max, mt_gene_pattern,
+    qc_gene_min_cells) {
+    return(list(evolution = list(
             log = list(population = TRUE, stats = c("worst", "mean", "best")),
             gene_column = gene_column,
             init_default = TRUE,
@@ -106,25 +114,24 @@ create_config <- function(results_dir, gene_column, max_iterations, mu,
             fitness_func = "Calinski_Harabasz",
             probability_mutation = probability_mutation,
             mutation_type = "adaptive",
-            adapt_mutation_rate = adapt_mutation_rate
-        ),
+            adapt_mutation_rate = adapt_mutation_rate),
+        
         sc_clustering = list(
             default = create_sc_clustering_config(10000, 2000, 10, 0.5,
                 30, 0.3),
             lower = create_sc_clustering_config(
                 scale_factor_min, nfeatures_min, dimensionality_min,
-                resolution_min, umap_neighbors_min, umap_min_dist_min
-            ),
+                resolution_min, umap_neighbors_min, umap_min_dist_min),
             upper = create_sc_clustering_config(
                 scale_factor_max, nfeatures_max, dimensionality_max,
-                resolution_max, umap_neighbors_max, umap_min_dist_max
-            ),
+                resolution_max, umap_neighbors_max, umap_min_dist_max),
             quality_thresholds = list(
-                nFeature_RNA_min = 200,
-                nFeature_RNA_max = 2500,
-                percent_mt = 5
-            )
-        ),
+                nFeature_RNA_min = qc_nfeature_min,
+                nFeature_RNA_max = qc_nfeature_max,
+                percent_mt = qc_percent_mt_max,
+                mt_gene_pattern = mt_gene_pattern,
+                gene_min_cells = qc_gene_min_cells)),
+        
         results = list(
             dir_name = results_dir,
             file_scatter_fitness = "scatter-fitness.png",
@@ -134,8 +141,7 @@ create_config <- function(results_dir, gene_column, max_iterations, mu,
             file_umap_plot = "umap-static-default-seurat.png",
             file_umap_plot_interactive = "umap-interactive.html",
             dir_umap_plot_interactive = "umap-interactive_files",
-            file_umap_plot_static = "umap-static.png"
-        )))
+            file_umap_plot_static = "umap-static.png")))
 }
 
 internal_run_optimization <- function(config, data_dir, results_dir) {
@@ -236,16 +242,20 @@ internal_run_optimization <- function(config, data_dir, results_dir) {
 #' Genomics dataset.
 #' Both types are accepted by Seurat and read in by `Read10X(...)` /
 #' `Read10X_h5(...)` and `CreateSeuratObject(...)`.
-#' After loading of the dataset, quality control filtering is applied:
+#' After loading of the dataset, quality control filtering is applied. Its
+#' thresholds and mitochondrial gene-name pattern can be set with the `qc_*`
+#' and `mt_gene_pattern` function parameters:
 #'
-#' - mitochondrial percentage is computed with pattern `^MT-`
+#' - mitochondrial percentage is computed using `mt_gene_pattern`
+#' - genes detected in fewer than `qc_gene_min_cells` cells are excluded
 #' - cells are retained only if:
-#' - `nFeature_RNA > 200`
-#' - `nFeature_RNA < 2500`
-#' - `percent_mt < 5`
+#' - `nFeature_RNA > qc_nfeature_min`
+#' - `nFeature_RNA < qc_nfeature_max`
+#' - `percent_mt < qc_percent_mt_max`
 #'
-#' These QC filters are hard-coded and apply to all datasets, which is an
-#' important assumption of the project.
+#' The defaults are `qc_nfeature_min = 200`, `qc_nfeature_max = 2500`,
+#' `qc_percent_mt_max = 5`, `mt_gene_pattern = "^MT-"`, and
+#' `qc_gene_min_cells = 3`.
 #'
 #' @section Seurat Pipeline Execution:
 #'
@@ -322,6 +332,13 @@ internal_run_optimization <- function(config, data_dir, results_dir) {
 #' in the optimization
 #' @param num_processes the number of processes to run the fitness evaluation
 #' with - default is the minimum of number of individuals and available cores
+#' @param qc_nfeature_min minimum detected features for retaining a cell
+#' @param qc_nfeature_max maximum detected features for retaining a cell
+#' @param qc_percent_mt_max maximum mitochondrial percentage for retaining a
+#' cell
+#' @param mt_gene_pattern regular expression identifying mitochondrial genes
+#' @param qc_gene_min_cells minimum number of cells in which a gene must be
+#' detected to be retained
 #' @export
 #' @returns the optimized parameters of the evolution as named vector
 #' @examples
@@ -345,13 +362,17 @@ run_optimization <- function(data_dir, results_dir = file.path(data_dir,
     umap_min_dist_min = 0.01, scale_factor_max = 50000, nfeatures_max = 5000,
     dimensionality_max = 50, resolution_max = 2, umap_neighbors_max = 50,
     umap_min_dist_max = 0.7,
-    num_processes = min(lambda, parallelly::availableCores())) {
+    num_processes = min(lambda, parallelly::availableCores()),
+    qc_nfeature_min = 200, qc_nfeature_max = 2500,
+    qc_percent_mt_max = 5, mt_gene_pattern = "^MT-",
+    qc_gene_min_cells = 3) {
     check_parameter_validity(gene_column, max_iterations, mu, lambda,
         survival_strategy, probability_mutation, adapt_mutation_rate,
         scale_factor_min, nfeatures_min, dimensionality_min, resolution_min,
         umap_neighbors_min, umap_min_dist_min, scale_factor_max, nfeatures_max,
         dimensionality_max, resolution_max, umap_neighbors_max,
-        umap_min_dist_max, num_processes)
+        umap_min_dist_max, num_processes, qc_nfeature_min, qc_nfeature_max,
+        qc_percent_mt_max, mt_gene_pattern, qc_gene_min_cells)
 
     message("Initializing optimization...")
 
@@ -360,7 +381,8 @@ run_optimization <- function(data_dir, results_dir = file.path(data_dir,
         scale_factor_min, nfeatures_min, dimensionality_min, resolution_min,
         umap_neighbors_min, umap_min_dist_min, scale_factor_max, nfeatures_max,
         dimensionality_max, resolution_max, umap_neighbors_max,
-        umap_min_dist_max)
+        umap_min_dist_max, qc_nfeature_min, qc_nfeature_max,
+        qc_percent_mt_max, mt_gene_pattern, qc_gene_min_cells)
 
     # create results directory
     if (!dir.exists(results_dir)) dir.create(results_dir, showWarnings = TRUE)

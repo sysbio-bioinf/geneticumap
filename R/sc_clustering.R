@@ -22,11 +22,13 @@ sc_clustering_pipeline <- function(count_data, config, params, return_markers
     check_is_named_list_or_matrix(count_data)
 
     seurat_obj <- Seurat::CreateSeuratObject(counts = count_data, project =
-        "geneticumap", min.cells = 3, min.features = 200)
+        "geneticumap", min.cells = config$sc_clustering$quality_thresholds$
+        gene_min_cells, min.features = config$sc_clustering$
+        quality_thresholds$nFeature_RNA_min)
 
     # quality control and cell selection
     seurat_obj[["percent_mt"]] <- Seurat::PercentageFeatureSet(seurat_obj,
-        pattern = "^MT-")
+        pattern = config$sc_clustering$quality_thresholds$mt_gene_pattern)
     seurat_obj <- select_cells(seurat_obj, config)
 
     # round integer-valued parameters (optimizer works with continuous floats)

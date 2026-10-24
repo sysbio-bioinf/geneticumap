@@ -130,7 +130,9 @@ test_that("Evolution runs with fix parameter (with socket workers)", {
             data_dir = data_dir, results_dir = results_dir,
             dimensionality_min = fix_dimensionality,
             dimensionality_max = fix_dimensionality, mu = 2, lambda = 4,
-            max_iterations = 2
+            max_iterations = 2, qc_nfeature_min = 250, qc_nfeature_max = 2000,
+            qc_percent_mt_max = 7, mt_gene_pattern = "^MT-",
+            qc_gene_min_cells = 5
         )
 
         # check optimized parameters are in expected ranges

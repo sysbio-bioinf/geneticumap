@@ -59,9 +59,10 @@ BiocManager::install("geneticumap")
 Provide `run_optimization()` with a directory containing either a 10X Genomics
 matrix (`matrix.mtx`, `barcodes.tsv`, and `features.tsv` or `genes.tsv`) or a
 10X HDF5 file (`.h5`). If the directory contains an HDF5 file, the package
-loads that file. The package applies fixed quality-control filters to every
-dataset: cells must have more than 200 and fewer than 2,500 detected features,
-and mitochondrial content must be below 5% using the `^MT-` gene-name pattern.
+loads that file. Quality-control thresholds and the mitochondrial gene-name
+pattern can be set with `qc_nfeature_min`, `qc_nfeature_max`,
+`qc_percent_mt_max`, `qc_gene_min_cells`, and `mt_gene_pattern` in
+`run_optimization()`.
 
 ## Run an Optimization
 

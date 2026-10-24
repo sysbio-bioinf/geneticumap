@@ -27,7 +27,12 @@ run_optimization(
   resolution_max = 2,
   umap_neighbors_max = 50,
   umap_min_dist_max = 0.7,
-  num_processes = min(lambda, parallelly::availableCores())
+  num_processes = min(lambda, parallelly::availableCores()),
+  qc_nfeature_min = 200,
+  qc_nfeature_max = 2500,
+  qc_percent_mt_max = 5,
+  mt_gene_pattern = "^MT-",
+  qc_gene_min_cells = 3
 )
 }
 \arguments{
@@ -99,6 +104,18 @@ in the optimization}
 
 \item{num_processes}{the number of processes to run the fitness evaluation
 with - default is the minimum of number of individuals and available cores}
+
+\item{qc_nfeature_min}{minimum detected features for retaining a cell}
+
+\item{qc_nfeature_max}{maximum detected features for retaining a cell}
+
+\item{qc_percent_mt_max}{maximum mitochondrial percentage for retaining a
+cell}
+
+\item{mt_gene_pattern}{regular expression identifying mitochondrial genes}
+
+\item{qc_gene_min_cells}{minimum number of cells in which a gene must be
+detected to be retained}
 }
 \value{
 the optimized parameters of the evolution as named vector
@@ -183,17 +200,21 @@ The dataset to run the optimization with may be an h5 file or a 10X
 Genomics dataset.
 Both types are accepted by Seurat and read in by \code{Read10X(...)} /
 \code{Read10X_h5(...)} and \code{CreateSeuratObject(...)}.
-After loading of the dataset, quality control filtering is applied:
+After loading of the dataset, quality control filtering is applied. Its
+thresholds and mitochondrial gene-name pattern can be set with the \verb{qc_*}
+and \code{mt_gene_pattern} function parameters:
 \itemize{
-\item mitochondrial percentage is computed with pattern \verb{^MT-}
+\item mitochondrial percentage is computed using \code{mt_gene_pattern}
+\item genes detected in fewer than \code{qc_gene_min_cells} cells are excluded
 \item cells are retained only if:
-\item \code{nFeature_RNA > 200}
-\item \code{nFeature_RNA < 2500}
-\item \code{percent_mt < 5}
+\item \code{nFeature_RNA > qc_nfeature_min}
+\item \code{nFeature_RNA < qc_nfeature_max}
+\item \code{percent_mt < qc_percent_mt_max}
 }
 
-These QC filters are hard-coded and apply to all datasets, which is an
-important assumption of the project.
+The defaults are \code{qc_nfeature_min = 200}, \code{qc_nfeature_max = 2500},
+\code{qc_percent_mt_max = 5}, \code{mt_gene_pattern = "^MT-"}, and
+\code{qc_gene_min_cells = 3}.
 }
 
 \section{Seurat Pipeline Execution}{
